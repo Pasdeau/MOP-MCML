@@ -1,137 +1,123 @@
-# Project MOP-MCML (English Version)
+# MOP-MCML Project: Monte Carlo Multi-Layered Simulation
 
-First modifications by Songlin Li, improvements by Wenzheng Wang
+This project implements the Monte Carlo Multi-Layered (MCML) method for simulating light transport in multi-layered turbid media.
+It relies on the method of **Mean Optical Path (MOP)** and includes both a standard **CPU version** and a **High-Performance GPU version**.
 
----
-
-## Launching with Visual Studio (VS) 2022
-
-- Issue with version 2019 as the project .vcxproj needs to be opened, which is not possible with version 2022.
-- Find the .sln file and open it with VS 2022 (open a project or solution).
-- You may need to download the necessary add-ons (15 minutes).
-- Depending on the versions, read the message in the bottom left window (Output) and follow the instructions (right-click on "Solution 'project MCML' ..." -> retarget the project).
+**Original Authors:**
+*   First modifications by Songlin Li
+*   Improvements and GPU port by Wenzheng Wang (LIP6)
 
 ---
 
-## Parameter Configuration
+## 📂 Project Structure
 
-1. On the second last line of the .mci file, you can set the parameters for the Photodiode in T and R. The 6 parameters are as follows (unit in cm):
-
-   - Position of PD in R: (Rx, Ry); Length of side: R1;
-   - Position of PD in T: (Tx, Ty); Length of side: T1.
-
-2. On the last line, define:
-   - Type of light source: 1. Point; 2. Gaussian; 3. Flat.
-   - Position of the light source: (x, y) in cm.
-   - Standard deviation for Gaussian: r/3 (standard value) or length for flat: d.
-
-3. At the end of the simulation, the terminal displays:
-   - Reflectance_CHatterjee and Transmittance_CHatterjee: R and T for definition 2;
-   - Reflectance_SL and Transmittance SL: R and T for definition 3;
-   - MOP: the mean optical path;
-   - User time: the simulation time.
-
-4. In the .mco file, you can find:
-   - Diffuse reflectance and Transmittance: R and T for definition 1;
-   - N_phR and N_phT: the number of photons received by the PDs in R and T.
+*   `mcmlmain.c`, `mcmlgo.c`, `mcmlio.c`, etc.: **Standard CPU Source Code** (C Language).
+*   `version_gpu/`: **GPU Source Code** (CUDA C/C++), including `mcml_gpu.cu`.
+*   `.mci` files: Input configuration files defining layers and simulation parameters.
+*   `.mco` files: Output result files.
+*   `get_mop.m`: MATLAB script for visualization and analysis of results.
 
 ---
 
-## Programming Notes
+## 🚀 1. CPU Version (Standard)
 
-- Modifications mainly in mcmlmain.c + mcmlgo.c (for photon transmission), actually everywhere (.h, etc.).
-- momlio is used for display.
+This is the standard C implementation, suitable for small-scale simulations or debugging on systems without NVIDIA GPUs.
 
----
+### Compilation (Windows / Visual Studio)
+1.  **Open Project**: Locate the `.sln` file and open it with **Visual Studio 2022**.
+    *   *Note*: VS 2019 projects may require "Retarget Projects" (right-click Solution -> Retarget) to upgrade the SDK version.
+2.  **Build**: Select "Build Solution" (Ctrl+Shift+B). An `.exe` will be generated.
 
-## Visualization
-
-- Open look_mop.m with Matlab, change the name of the .mco file and run;
-- get_mop.m allows users to select the output images they are interested in.
-
----
-
-## Compilation
-
-- Display --> Terminal;
-- In Terminal: 'cl' followed by the file names without the .h extension (cl mcmlmain.c mcmlgo.c mcmlio.c mcmlnr.c);
-- An .exe file is then generated in the same directory with the name of the first file entered in the list.
+### Compilation (Linux / MacOS Terminal)
+```bash
+# Compile source files linked together
+cl mcmlmain.c mcmlgo.c mcmlio.c mcmlnr.c
+```
+*(Or use `gcc` on Linux: `gcc -O2 -o mcml mcmlmain.c mcmlgo.c mcmlio.c mcmlnr.c -lm`)*
 
 ---
 
-## Additional Explanation
+## ⚡ 2. GPU Version (High Performance)
 
-You can use VS to open the .sln file and modify the MCML to be in T or R mode by changing the code:
+Located in the `version_gpu/` folder. This version uses **CUDA** to parallelize photon transport, offering massive speed improvements (e.g., simulating millions of photons in sub-seconds).
 
-- Commented code "Recording photon optical paths in R" can make MCML unavailable in R mode;
-- Commented code "Recording photon optical paths in T" can make MCML unavailable in T mode.
+### Prerequisites
+*   **Hardware**: NVIDIA GPU (Compute Capability 5.0+, e.g., A100, V100, RTX A-series).
+*   **Software**:
+    *   CUDA Toolkit (e.g., v11.8).
+    *   GCC (compatible version).
 
----
+### Compilation
+Navigate to the GPU directory and use `make`:
+```bash
+cd version_gpu
+make
+```
+This generates the `mcml_gpu` executable.
 
-# Projet MOP-MCML (Version Française)
+### Usage
+Run the executable with an input file:
+```bash
+./mcml_gpu <input_file.mci>
+# Example:
+./mcml_gpu input.mci
+```
 
-Première modifications faites par Songlin Li, améliorations par Wenzheng Wang
-
----
-
-## Lancement avec Visual Studio (VS) 2022
-
-- Souci de version avec 2019 car avec VS 2019 projet .vcxproj à ouvrir. Pas possible avec version 2022.
-- Trouver le .sln et l'ouvrir avec VS 2022 (ouvrir un projet ou une solution).
-- Il est possible de devoir télécharger les add-ons nécessaires (15 minutes).
-- Suivant les versions, message à lire dans la fenêtre en bas à gauche (Sortie) et faire ce qui est dit (clic droit sur « Solution 'projet MCML' ... » -> recible le projet).
-
----
-
-## Configuration des Paramètres
-
-1. Sur la 2ème dernière ligne du fichier .mci, on peut saisir les paramètres du Photodiode en T et en R, les 6 paramètres sont comme le suivant (unité en cm) :
-
-   - Position du PD en R : (Rx, Ry); Longueur du côté : R1;
-   - Position du PD en T : (Tx, Ty); Longueur du côté : T1.
-
-2. Sur la dernière ligne, on définit :
-   - Type de source lumineuse : 1. Point; 2. Gaussien; 3. Plat.
-   - Position de la source lumineuse : (x, y) en cm.
-   - Écart-type pour Gaussien : r/3 (valeur standard) ou longueur pour plat : d.
-
-3. En fin de simulation, sur le terminal, on affiche :
-   - Réflectance_CHatterjee et Transmittance_CHatterjee : la R et la T pour la définition 2;
-   - Reflectance_SL et Transmittance SL : la R et la T pour la définition 3;
-   - MOP : le chemin optique moyen;
-   - User time : le temps de simulation.
-
-4. On trouve dans le fichier .mco :
-   - Diffuse reflectance et Transmittance : la R et la T pour la définition 1;
-   - N_phR et N_phT : le nombre de photons reçus par les PD en R et en T.
+### HPC / SLURM Submission
+For cluster environments (e.g., LIP6 Convergence):
+```bash
+sbatch run_batch.slurm
+```
+*(The `run_batch.slurm` script can compile and run multiple simulations sequentially).*
 
 ---
 
-## Remarques de Programmation
+## 📝 Input & Configuration (.mci Files)
 
-- Modifications principalement dans mcmlmain.c + mcmlgo.c (pour l'envoi des photons), partout en fait (.h, etc).
-- momlio sert à l'affichage.
+The input file defines the simulation parameters.
+
+**1. Photodiode (PD) Parameters** (2nd to last line):
+Format (cm):
+`Rx Ry Rl Tx Ty Tl`
+*   **(Rx, Ry)**: Center position of Reflectance PD.
+*   **Rl**: Side length of Reflectance PD.
+*   **(Tx, Ty)**: Center position of Transmittance PD.
+*   **Tl**: Side length of Transmittance PD.
+
+**2. Light Source** (Last line):
+Format:
+`Type x y Param`
+*   **Type**: `1` = Point, `2` = Gaussian, `3` = Flat.
+*   **(x, y)**: Source position (cm).
+*   **Param**: Standard deviation (Gaussian) or length/diameter (Flat).
 
 ---
 
-## Visualisation
+## 📊 Output & Visualization
 
-- Avec Matlab ouvrir look_mop.m, changer le nom du fichier .mco et exécuter;
-- get_mop.m permet aux utilisateurs de sélectionner les images de sortie qui les intéressent.
+**Console Output:**
+*   **Reflectance/Transmittance (Chatterjee/SL)**: R and T values calculated based on different definitions.
+*   **MOP**: Mean Optical Path.
+*   **User Time**: Simulation duration.
+
+**File Output (.mco):**
+Contains grid data for absorption, reflectance, and transmittance.
+*   **N_phR / N_phT**: Photon counts on PDs.
+*   **summary.csv**: (GPU Version) A concise summary of `Rd` and `Tt` for all runs.
+
+**Visualization (MATLAB):**
+1.  Open `get_mop.m`.
+2.  Set the filename (e.g., `960.mco`).
+3.  Run the script to plot:
+    *   Photon weight distribution.
+    *   Detector and Light source positions.
 
 ---
 
-## Compilation
+## 🔧 Programming Notes
 
-- Affichage --> Terminal;
-- Dans Terminal : 'cl' puis le nom des fichiers sans le .h (cl mcmlmain.c mcmlgo.c mcmlio.c mcmlnr.c);
-- Un fichier .exe est alors généré dans le même répertoire avec le nom du premier fichier rentré dans la liste.
-
----
-
-## Explication Complémentaire
-
-Vous pouvez utiliser VS pour ouvrir le fichier .sln et modifier le MCML pour qu'il soit en T ou en R en modifiant le code :
-
-- Code commentaire « Enregistrement des chemins optiques des photons en R » est possible de rendre MCML indisponible en mode R;
-- Code commentaire « Enregistrement des chemins optiques des photons en T » est possible de rendre MCML indisponible en mode T.
+*   **Logic**: Core photon transport (Hop/Drop/Spin) is consistent across CPU and GPU versions.
+*   **GPU Differences**:
+    *   Uses `curand` for parallel random numbers.
+    *   Uses atomic operations (`atomicAdd`) for result accumulation.
+    *   Flattened arrays for efficient memory access.

@@ -1,0 +1,18 @@
+#!/bin/bash
+#SBATCH --job-name=mcml_gpu
+#SBATCH --output=%x_%j.out
+#SBATCH --error=%x_%j.err
+#SBATCH --partition=convergence
+#SBATCH --gres=gpu:a100_3g.40gb:1
+#SBATCH --mail-user=wenzheng.wang@lip6.fr
+#SBATCH --mail-type=ALL
+#SBATCH --time=02:00:00
+
+# Load environment
+module purge
+module load gcc/11 cuda/11.8
+
+# Run simulation
+echo "Starting simulation on $(hostname) at $(date)"
+./mcml_gpu output_5nm.mci
+echo "Simulation finished at $(date)"

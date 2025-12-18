@@ -1,0 +1,17 @@
+1.0    # file version
+1      # Number of runs
+
+### Specify data for run 1 ###
+test_output.mco A  # output filename, ASCII/Binary
+1000000   # No. of photons
+0.002 0.002  # dz, dr
+1000 1000 1  # No. of dz, dr & da
+
+1   # No. of layers
+1.000000   # n for medium above 
+#n     mua    mus    g    d
+1.48  0.704  281.70666666666665  0.85  2
+1.000000   # n for medium below
+
+1.2 0.0  0.1  0.8 0.0  0.1  # PD : (Rx, Ry), Rl, (Tx, Ty), Tl (in cm)
+3  0.8 0.0  0.1     # light source : param 1: 1.point 2.Gaussian 3.Flat;
