@@ -41,18 +41,18 @@ c = onCleanup(@() fclose(fid));
 S = struct();
 S.notes = {};
 
-% 逐行读取，累积 total 个浮点数；自动跳过注释/空行
+% Read line by line, accumulate total floats; skip comments/empty lines automatically
 function u = local_read_block(fid, total, parsefloats)
     u = zeros(total,1); k = 0;
     while k < total
         pos = ftell(fid);
         L = fgetl(fid);
         if ~ischar(L)
-            break  % 意外到达 EOF
+            break  % Unexpected EOF
         end
-        v = parsefloats(L);   % 去掉 # 注释后的数值
+        v = parsefloats(L);   % Value after removing # comment
         if isempty(v)
-            % 空行或表头行，继续
+            % Empty line or header line, continue
             continue
         end
         need = total - k;
@@ -60,17 +60,17 @@ function u = local_read_block(fid, total, parsefloats)
             u(k+1:k+numel(v)) = v;
             k = k + numel(v);
         else
-            % 极少见：该行提供的数超过所需。只取所需部分。
+            % Rare: Line provided more numbers than needed. Take only needed part.
             u(k+1:total) = v(1:need);
             k = total;
-            % 若担心丢弃本行多余的数，可在此 fseek(fid,pos,'bof');
-            % 然后用 textscan 精细回读。但常见 MCML 输出不会触发该分支。
+            % If worried about discarding extra numbers, can fseek back here.
+            % But common MCML output doesn't trigger this branch.
         end
     end
     if k < total
-        % 与你原脚本 OP 段一致的保守填充策略，便于继续流程
+        % Conservative padding strategy matching your original OP section script
         u(k+1:total) = 0;
-        warning('local_read_block:short','数据不足：已零填充 %d 个元素。', total-k);
+        warning('local_read_block:short','Insufficient data: padded %d elements with zeros.', total-k);
     end
 end
 
