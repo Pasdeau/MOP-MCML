@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:a100_3g.40gb:1
 #SBATCH --mail-user=wenzheng.wang@lip6.fr
 #SBATCH --mail-type=ALL
-#SBATCH --time=02:00:00
+#SBATCH --time=00:10:00
 
 # Load environment
 module purge

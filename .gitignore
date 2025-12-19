@@ -1,5 +1,6 @@
-3mm_1500.mci
-4mm_1500.mci
-5mm_1500.mci
-.DS_Store
 output_gpu/
+__pycache__/
+*.o
+*.out
+*.mco
+*.mci
