@@ -71,17 +71,43 @@ make
 This generates the `mcml_gpu` executable.
 
 ### Usage
-Run the executable with an input file:
+### Running a Simulation
 ```bash
 ./mcml_gpu <input_file.mci>
 # Example:
 ./mcml_gpu input.mci
 ```
 
+**Output**: Each `.mci` file automatically generates a corresponding CSV file:
+- `3mm_1500.mci` → `summary_3mm_1500.csv`
+- `4mm_1500.mci` → `summary_4mm_1500.csv`
+
 ### HPC / SLURM Submission
-For cluster environments (e.g., LIP6 Convergence):
+For cluster environments (e.g., LIP6 Convergence), use the provided SLURM scripts in `version_gpu/`:
+
+**Single File Simulation:**
 ```bash
-sbatch run_batch.slurm
+# Edit run_gpu.slurm to specify your input file
+sbatch version_gpu/run_gpu.slurm
+```
+
+**Batch Processing (Multiple Files):**
+```bash
+# Runs multiple .mci files sequentially
+sbatch version_gpu/run_batch.slurm
+```
+
+**SLURM Script Template:**
+```bash
+#!/bin/bash
+#SBATCH --partition=convergence
+#SBATCH --gres=gpu:a100_3g.40gb:1
+#SBATCH --mail-type=ALL
+
+module purge
+module load gcc/11 cuda/11.8
+
+./mcml_gpu your_file.mci
 ```
 *(The `run_batch.slurm` script can compile and run multiple simulations sequentially).*
 
