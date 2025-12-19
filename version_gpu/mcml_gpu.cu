@@ -459,8 +459,26 @@ int main(int argc, char *argv[]) {
   CheckParm(file, &In_Parm);          // Logic check only
   short num_runs = ReadNumRuns(file); // Skip header (Version and NumRuns)
 
+  // Generate summary CSV filename from input filename
+  // e.g., "3mm_1500.mci" -> "summary_3mm_1500.csv"
+  char summary_name[STRLEN];
+  char input_basename[STRLEN];
+
+  // Extract basename from input filename (remove path and extension)
+  const char *slash = strrchr(inputs_fname, '/');
+  const char *basename = slash ? slash + 1 : inputs_fname;
+  strcpy(input_basename, basename);
+
+  // Remove .mci extension if present
+  char *dot = strrchr(input_basename, '.');
+  if (dot && strcmp(dot, ".mci") == 0) {
+    *dot = '\0';
+  }
+
+  // Create summary filename: summary_<basename>.csv
+  snprintf(summary_name, STRLEN, "summary_%s.csv", input_basename);
+
   // Open summary CSV (overwrite)
-  const char *summary_name = "summary.csv";
   FILE *summary_fp = fopen(summary_name, "w");
   if (!summary_fp) {
     fprintf(
@@ -471,6 +489,7 @@ int main(int argc, char *argv[]) {
     // Header
     fprintf(summary_fp, "output,Rd,Tt\n");
     fflush(summary_fp);
+    printf("Will write summary to: %s\n", summary_name);
   }
 
   for (short i_run = 1; i_run <= num_runs; i_run++) {
