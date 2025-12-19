@@ -8,11 +8,12 @@
 #SBATCH --mail-type=ALL
 #SBATCH --time=02:00:00
 
-# Load environment
+# Load CUDA environment
 module purge
 module load gcc/11 cuda/11.8
 
 # Run simulation
-echo "Starting simulation on $(hostname) at $(date)"
-./mcml_gpu output_5nm.mci
+# Each .mci file will generate its own summary_<name>.csv
+echo "Starting GPU simulation at $(date)"
+./mcml_gpu input.mci
 echo "Simulation finished at $(date)"
