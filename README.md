@@ -37,9 +37,24 @@ cl mcmlmain.c mcmlgo.c mcmlio.c mcmlnr.c
 
 ---
 
-## ⚡ 2. GPU Version (High Performance)
+## ⚡ 2. GPU Version (High Performance) & Comparison
 
-Located in the `version_gpu/` folder. This version uses **CUDA** to parallelize photon transport, offering massive speed improvements (e.g., simulating millions of photons in sub-seconds).
+The GPU version is designed to replace the CPU version for high-throughput simulations.
+
+### 🆚 Performance Comparison
+
+| Feature | CPU Version | GPU Version (CUDA) |
+| :--- | :--- | :--- |
+| **Simulation Time** | ~70.0 sec / run | **~0.4 sec / run** (on A100) |
+| **Speedup** | 1x | **~175x Faster** |
+| **Photon Transport** | Serial (One by one) | **Parallel** (Thousands at once) |
+| **Precision** | Double Precision | Double Precision (Atomic Operations) |
+| **Hardware** | Standard CPU | NVIDIA GPU (Compute Cap 5.0+) |
+
+*> Note: Benchmark based on 2,000,000 photons per run.*
+
+### GPU Version Location
+Located in the `version_gpu/` folder. This version uses **CUDA** to parallelize photon transport.
 
 ### Prerequisites
 *   **Hardware**: NVIDIA GPU (Compute Capability 5.0+, e.g., A100, V100, RTX A-series).
