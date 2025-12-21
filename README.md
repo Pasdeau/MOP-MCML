@@ -8,6 +8,7 @@ It relies on the method of **Mean Optical Path (MOP)** and includes both a stand
 *   Wenzheng Wang – Improvements and GPU port
 
 **Supervisor:**
+*   Dr. Julien Denoulet (Sorbonne Université, LIP6)
 *   Prof. Sylvain Feruglio (Sorbonne Université, LIP6)
 
 ---
