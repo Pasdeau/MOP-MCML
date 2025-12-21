@@ -3,9 +3,12 @@
 This project implements the Monte Carlo Multi-Layered (MCML) method for simulating light transport in multi-layered turbid media.
 It relies on the method of **Mean Optical Path (MOP)** and includes both a standard **CPU version** and a **High-Performance GPU version**.
 
-**Original Authors:**
-*   First modifications by Songlin Li
-*   Improvements and GPU port by Wenzheng Wang (LIP6)
+**Authors:**
+*   Songlin Li – First modifications
+*   Wenzheng Wang – Improvements and GPU port
+
+**Supervisor:**
+*   Prof. Sylvain Feruglio (Sorbonne Université, LIP6)
 
 ---
 
