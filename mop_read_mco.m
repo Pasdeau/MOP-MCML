@@ -1,6 +1,6 @@
 function S = mop_read_mco(fname, varargin)
 % mop_read_mco  Parse MCML/MOP-MCML .mco file into a structured MATLAB object.\
-% 
+%
 %   S = mop_read_mco('fat800.mco','Verbose',true);
 %
 % Key outputs in S:
@@ -42,37 +42,37 @@ S = struct();
 S.notes = {};
 
 % Read line by line, accumulate total floats; skip comments/empty lines automatically
-function u = local_read_block(fid, total, parsefloats)
-    u = zeros(total,1); k = 0;
-    while k < total
-        pos = ftell(fid);
-        L = fgetl(fid);
-        if ~ischar(L)
-            break  % Unexpected EOF
+    function u = local_read_block(fid, total, parsefloats)
+        u = zeros(total,1); k = 0;
+        while k < total
+            pos = ftell(fid);
+            L = fgetl(fid);
+            if ~ischar(L)
+                break  % Unexpected EOF
+            end
+            v = parsefloats(L);   % Value after removing # comment
+            if isempty(v)
+                % Empty line or header line, continue
+                continue
+            end
+            need = total - k;
+            if numel(v) <= need
+                u(k+1:k+numel(v)) = v;
+                k = k + numel(v);
+            else
+                % Rare: Line provided more numbers than needed. Take only needed part.
+                u(k+1:total) = v(1:need);
+                k = total;
+                % If worried about discarding extra numbers, can fseek back here.
+                % But common MCML output doesn't trigger this branch.
+            end
         end
-        v = parsefloats(L);   % Value after removing # comment
-        if isempty(v)
-            % Empty line or header line, continue
-            continue
-        end
-        need = total - k;
-        if numel(v) <= need
-            u(k+1:k+numel(v)) = v;
-            k = k + numel(v);
-        else
-            % Rare: Line provided more numbers than needed. Take only needed part.
-            u(k+1:total) = v(1:need);
-            k = total;
-            % If worried about discarding extra numbers, can fseek back here.
-            % But common MCML output doesn't trigger this branch.
+        if k < total
+            % Conservative padding strategy matching your original OP section script
+            u(k+1:total) = 0;
+            warning('local_read_block:short','Insufficient data: padded %d elements with zeros.', total-k);
         end
     end
-    if k < total
-        % Conservative padding strategy matching your original OP section script
-        u(k+1:total) = 0;
-        warning('local_read_block:short','Insufficient data: padded %d elements with zeros.', total-k);
-    end
-end
 
 % Legacy header skipping: MCML writes a textual header before grid line.
 % Keep behavior but validate the final line has 2 floats: dz dr.
@@ -174,11 +174,13 @@ line = nextline(); % subheader
 S.blocks.Az = fscanf(fid, '%f', S.grid.Nz);
 
 % Rd_r -> Rr (Nr)
-line = nextline(); % header or newline
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header
 S.blocks.Rr = fscanf(fid,'%f', S.grid.Nr);
 
 % Rd_a -> Ra (Na)
-line = nextline(); % header
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header
 S.blocks.Ra = zeros(S.grid.Na,1);
 for i=1:S.grid.Na
     line = nextline();
@@ -186,12 +188,13 @@ for i=1:S.grid.Na
 end
 
 % Tt_r -> Tr (Nr)
-line = nextline(); % header
-line = nextline(); % subheader
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header
 S.blocks.Tr = fscanf(fid, '%f', S.grid.Nr);
 
 % Tt_a -> Ta (Na)
-line = nextline(); % header
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header
 S.blocks.Ta = zeros(S.grid.Na,1);
 for i=1:S.grid.Na
     line = nextline();
@@ -199,27 +202,29 @@ for i=1:S.grid.Na
 end
 
 % A_rz -> Azr (Nz x Nr)
-line = nextline(); % header
-line = nextline(); % subheader
-for i=1:5, line = nextline(); end % legacy skip
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header 1
+for i=1:5, line = nextline(); end % legacy skip (headers 2-6)
 u = fscanf(fid,'%f', S.grid.Nz * S.grid.Nr);
 S.blocks.Azr = reshape(u, [S.grid.Nz S.grid.Nr]);
 
 % Rd_ra -> Rra (Nr x Na)
-line = nextline(); % header
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header 1
 for i=1:5, line = nextline(); end % legacy skip
 u = fscanf(fid, '%f', S.grid.Nr * S.grid.Na);
 S.blocks.Rra = reshape(u, [S.grid.Nr S.grid.Na]);
 
 % Tt_ra -> Tra (Nr x Na)
-line = nextline(); % header
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header 1
 for i=1:5, line = nextline(); end % legacy skip
 u = fscanf(fid, '%f', S.grid.Nr * S.grid.Na);
 S.blocks.Tra = reshape(u, [S.grid.Nr S.grid.Na]);
 
 % OP -> OP (Nz x Nr), normalize by NphOP if present
-line = nextline(); % header
-line = nextline(); % subheader
+line = nextline();
+while all(isspace(line)), line = nextline(); end % seek header 1
 for i=1:5, line = nextline(); end % legacy skip
 u = fscanf(fid,'%f'); % OP block size may vary across MCML variants
 % Some legacy files omit the first few bins; pad if needed to Nz*Nr

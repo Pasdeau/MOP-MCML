@@ -19,54 +19,78 @@ opt = p.Results;
 r = S.grid.r; z = S.grid.z; OP = S.blocks.OP;
 figs = struct();
 
-figs.OP = figure('Color','w'); clf;
-imagesc(r, z, log10(max(OP, eps)));
+% xy = 32; % Reference font size (Unused)
+figs.OP = figure();
+set(figs.OP, ...
+    'Color',       'w', ...
+    'Name',        '2D MOP Visualization', ...
+    'NumberTitle', 'on', ...
+    'Position',    [100 100 900 700]);
+clf(figs.OP);
+
+% Use reference plotting style (but default fonts)
+imagesc(r, z, log10(OP));
 axis tight ij
-xlabel('r [cm]'); ylabel('z [cm]');
-title('log_{10}(OP)');
+xlabel('r [cm]');
+ylabel('z [cm]');
+% title('log_{10}(OP)'); % Reverted as requested (Title removed)
+
+% set(gca, 'FontSize', xy, 'FontWeight', 'Bold'); % Reverted as requested
 
 if isempty(opt.Colormap)
     if exist('makec2f','file'), colormap(makec2f);
-    else, colormap(parula);
+    else, colormap(parula); % Fallback
     end
 else
     colormap(opt.Colormap);
 end
-cb = colorbar('eastoutside'); ylabel(cb,'log_{10}(OP)');
+
+cb = colorbar('eastoutside');
+% Reference style for colorbar
+set(cb, 'TickLabels', {' ', ' '});
+set(cb, 'FontSize', 20);
+% ylabel(cb,'log_{10}(OP)'); % Reference code commented out/removed title or label
 
 if ~isempty(opt.CLim), caxis(opt.CLim); end
 hold on
 
-% PD rectangles
-rect_h = S.grid.dz*5;  % plot height outside domain for visibility
+% Rectangles (PD)
+rect_h = S.grid.dz*5;  % Uniform thickness for PD and Source
 z_top = z(1); z_bot = z(end); gap = 0;
 
 if opt.ShowRPD && all(isfinite([S.pd.Rx S.pd.Rl]))
     rectangle('Position',[S.pd.Rx - S.pd.Rl/2, z_top - gap - rect_h, S.pd.Rl, rect_h], ...
         'EdgeColor',[0 0 1],'LineWidth',2,'FaceColor',[0 0 1 0.15],'Clipping','off');
-    plot(S.pd.Rx, z_top, 'v','MarkerFaceColor',[0 0 1],'MarkerEdgeColor','none','Clipping','off');
+    % Marker removed as requested
 end
 if opt.ShowTPD && all(isfinite([S.pd.Tx S.pd.Tl]))
     rectangle('Position',[S.pd.Tx - S.pd.Tl/2, z_bot + gap, S.pd.Tl, rect_h], ...
         'EdgeColor',[0 0 1],'LineWidth',2,'FaceColor',[0 0 1 0.15],'Clipping','off');
-    plot(S.pd.Tx, z_bot, '^','MarkerFaceColor',[0 0 1],'MarkerEdgeColor','none','Clipping','off');
+    % Marker removed as requested
 end
 
 % Source glyph
 if isfinite(S.light.type) && isfinite(S.light.x)
     switch S.light.type
         case 1 % point
-            tri_h = 0.02; tri_w = 0.02;
+            % Increased triangle size
+            tri_h = 0.05; tri_w = 0.05;
             P = [ S.light.x,             z_top; ...
-                  S.light.x - tri_w/2,   z_top - gap - tri_h; ...
-                  S.light.x + tri_w/2,   z_top - gap - tri_h ];
+                S.light.x - tri_w/2,   z_top - gap - tri_h; ...
+                S.light.x + tri_w/2,   z_top - gap - tri_h ];
             patch('XData',P(:,1),'YData',P(:,2), ...
-                  'FaceColor',[1 0 0], 'EdgeColor','none', 'Clipping','off');
+                'FaceColor',[1 0 0], 'EdgeColor','none', 'Clipping','off');
         case {2,3} % gaussian/flat
-            sideL = max(rect_h, S.light.l);
-            rectangle('Position',[S.light.x - sideL/2, z_top - gap - sideL, sideL, sideL], ...
-                      'EdgeColor',[1 0 0],'LineWidth',2,'FaceColor',[1 0 0 0.15], 'Clipping','off');
+            % Match thickness to PD (rect_h)
+            sideL = rect_h;
+            % Width is S.light.l, Height is sideL
+            rectangle('Position',[S.light.x - S.light.l/2, z_top - gap - sideL, S.light.l, sideL], ...
+                'EdgeColor',[1 0 0],'LineWidth',2,'FaceColor',[1 0 0 0.15], 'Clipping','off');
     end
 end
 hold off
+
+% Strict limits to exclude external annotations
+ylim([z(1) z(end)]);
+% xlim([r(1) r(end)]); % automatic xlim usually fine
 end

@@ -151,8 +151,9 @@ void ReadDzDr(FILE *File_Ptr, InputStruct *In_Ptr) {
   char buf[STRLEN];
   strcpy(buf, FindDataLine(File_Ptr));
   if (buf[0] == '\0')
-    nrerror("Reading dz, dr.\n");
-  sscanf(buf, "%lf%lf", &In_Ptr->dz, &In_Ptr->dr);
+    nrerror("Reading dz, dr, dx, dy.\n");
+  sscanf(buf, "%lf%lf%lf%lf", &In_Ptr->dz, &In_Ptr->dr, &In_Ptr->dx,
+         &In_Ptr->dy);
 }
 
 void ReadNzNrNa(FILE *File_Ptr, InputStruct *In_Ptr) {
@@ -160,7 +161,8 @@ void ReadNzNrNa(FILE *File_Ptr, InputStruct *In_Ptr) {
   strcpy(buf, FindDataLine(File_Ptr));
   if (buf[0] == '\0')
     nrerror("Reading info.\n");
-  sscanf(buf, "%hd%hd%hd", &In_Ptr->nz, &In_Ptr->nr, &In_Ptr->na);
+  sscanf(buf, "%hd%hd%hd%hd%hd", &In_Ptr->nz, &In_Ptr->nr, &In_Ptr->na,
+         &In_Ptr->nx, &In_Ptr->ny);
   In_Ptr->da = 0.5 * PI / In_Ptr->na;
 }
 
@@ -327,6 +329,7 @@ void CheckParm(FILE *File_Ptr, InputStruct *In_Ptr) {
 void InitOutputData(InputStruct In_Parm, OutStruct *Out_Ptr) {
   short nz = In_Parm.nz, nr = In_Parm.nr, na = In_Parm.na,
         nl = In_Parm.num_layers;
+  short nx = In_Parm.nx, ny = In_Parm.ny;
 
   if (nz <= 0 || nr <= 0 || na <= 0 || nl <= 0)
     nrerror("Wrong grid parameters.\n");
@@ -348,7 +351,7 @@ void InitOutputData(InputStruct In_Parm, OutStruct *Out_Ptr) {
   Out_Ptr->Tt_r = (double *)calloc(nr, sizeof(double));
   Out_Ptr->Tt_a = (double *)calloc(na, sizeof(double));
 
-  Out_Ptr->OP = (double *)calloc(nr * nz, sizeof(double));
+  Out_Ptr->OP_3D = (double *)calloc((long)nx * ny * nz, sizeof(double));
 
   Out_Ptr->photonsnbrR = 0;
   Out_Ptr->photonsnbrT = 0;
@@ -366,7 +369,7 @@ void FreeData(InputStruct In_Parm, OutStruct *Out_Ptr) {
   free(Out_Ptr->Tt_ra);
   free(Out_Ptr->Tt_r);
   free(Out_Ptr->Tt_a);
-  free(Out_Ptr->OP);
+  free(Out_Ptr->OP_3D);
 }
 
 /***********************************************************
@@ -526,9 +529,10 @@ static void WriteInParm(FILE *file, InputStruct In_Parm) {
   fprintf(file, "InParm \t\t\t# Input parameters. cm is used.\n");
   fprintf(file, "%s \tA\t\t# output file name, ASCII.\n", In_Parm.out_fname);
   fprintf(file, "%ld \t\t\t# No. of photons\n", In_Parm.num_photons);
-  fprintf(file, "%G\t%G\t\t# dz, dr [cm]\n", In_Parm.dz, In_Parm.dr);
-  fprintf(file, "%hd\t%hd\t%hd\t# No. of dz, dr, da.\n\n", In_Parm.nz,
-          In_Parm.nr, In_Parm.na);
+  fprintf(file, "%G\t%G\t%G\t%G\t# dz, dr, dx, dy [cm]\n", In_Parm.dz,
+          In_Parm.dr, In_Parm.dx, In_Parm.dy);
+  fprintf(file, "%hd\t%hd\t%hd\t%hd\t%hd\t# No. of dz, dr, da, nx, ny.\n\n",
+          In_Parm.nz, In_Parm.nr, In_Parm.na, In_Parm.nx, In_Parm.ny);
   fprintf(file, "%hd\t\t\t\t\t# Number of layers\n", In_Parm.num_layers);
   fprintf(file, "#n\tmua\tmus\tg\td\t# One line for each layer\n");
   fprintf(file, "%G\t\t\t\t\t# n for medium above\n", In_Parm.layerspecs[0].n);
@@ -656,17 +660,20 @@ static void WriteA_z(FILE *file, short Nz, OutStruct Out_Parm) {
   fprintf(file, "\n");
 }
 
-static void WriteOP(FILE *file, short Nr, short Nz, OutStruct Out_Parm) {
-  short iz, ir;
-  fprintf(file, "%s\n%s\n%s\n%s\n%s\n%s\n", "# OP[r][z]. [1/cm3]",
-          "# OP[0][0], [0][1],..[0][nz-1]", "# OP[1][0], [1][1],..[1][nz-1]",
-          "# ...", "# OP[nr-1][0], [nr-1][1],..[nr-1][nz-1]", "OP");
-  for (ir = 0; ir < Nr; ir++)
-    for (iz = 0; iz < Nz; iz++) {
-      fprintf(file, "%12.4E ", Out_Parm.OP[ir * Nz + iz]);
-      if ((ir * Nz + iz + 1) % 5 == 0)
-        fprintf(file, "\n");
-    }
+static void WriteOP_3D(FILE *file, short nx, short ny, short nz,
+                       OutStruct Out_Parm) {
+  long ix, iy, iz;
+  fprintf(file, "%s\n%s\n%s\n%s\n%s\n%s\n", "# OP_3D[x][y][z]. [1/cm3]",
+          "# OP_3D[0][0][0], [0][0][1],..[0][0][nz-1]",
+          "# OP_3D[0][1][0], [0][1][1],..[0][1][nz-1]", "# ...",
+          "# OP_3D[nx-1][ny-1][0],..[nx-1][ny-1][nz-1]", "OP_3D");
+  for (ix = 0; ix < nx; ix++)
+    for (iy = 0; iy < ny; iy++)
+      for (iz = 0; iz < nz; iz++) {
+        fprintf(file, "%12.4E ", Out_Parm.OP_3D[ix * ny * nz + iy * nz + iz]);
+        if ((ix * ny * nz + iy * nz + iz + 1) % 5 == 0)
+          fprintf(file, "\n");
+      }
   fprintf(file, "\n");
 }
 
@@ -701,6 +708,6 @@ void WriteResult(InputStruct In_Parm, OutStruct Out_Parm, char *TimeReport) {
   WriteA_rz(file, In_Parm.nr, In_Parm.nz, Out_Parm);
   WriteRd_ra(file, In_Parm.nr, In_Parm.na, Out_Parm);
   WriteTt_ra(file, In_Parm.nr, In_Parm.na, Out_Parm);
-  WriteOP(file, In_Parm.nr, In_Parm.nz, Out_Parm);
+  WriteOP_3D(file, In_Parm.nx, In_Parm.ny, In_Parm.nz, Out_Parm);
   fclose(file);
 }

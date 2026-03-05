@@ -3,4 +3,54 @@ __pycache__/
 *.o
 *.out
 *.mco
-*.mci
+summary.csv
+*.png
+
+# Compiled binaries
+mop-mcml
+mop_mcml
+mcml
+mcml_cpu_Ronly
+current_mcml_cpu_RT
+current_mcml_cpu_Ronly
+current_mcml_cpu_Tonly
+
+# System / IDE files
+.DS_Store
+.vscode/
+
+# Personal / thesis files
+chapter3_modeling_draft.md
+chapter3_modeling_polished.md
+mop_mcml_versions_overview.md
+mop_mcml_vis.py
+look_mop_paul.m
+upload_3d_gpu.sh
+run_validate_all.sh
+
+# Large experimental .mci files
+input.mci
+3mm_1500.mci
+4mm_1500.mci
+5mm_1500.mci
+output_5nm.mci
+
+# Large test/output .mci files in root
+test_1_py.png
+test_2_py.png
+test_output.mco
+test_cpu.mco
+test_gpu_1M.mco
+
+# Scratch / debug SLURM scripts (keep only essential ones)
+version_gpu/run_compile.slurm
+version_gpu/run_mode_compare.slurm
+version_gpu/run_test_gpu.slurm
+version_gpu/run_validate.slurm
+version_gpu/run_validate_variants_opfix.slurm
+version_gpu/run_validate_variants_runonly.slurm
+version_gpu/run_validate_variants_runonly_80g.slurm
+
+# Private data / post-processing directories
+post/
+validate_RT/

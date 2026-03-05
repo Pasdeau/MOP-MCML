@@ -21,11 +21,11 @@
 
 /* Per-step path entry recorded during K2 replay */
 typedef struct {
-  short ir;
+  short ix;
+  short iy;
   short iz;
-  float w;   /* photon weight at this step (float: saves memory, sufficient
-                precision) */
-} PathEntry; /* 8 bytes per step */
+  float w;   /* photon weight at this step */
+} PathEntry; /* 10 bytes per step */
 
 typedef bool Boolean;
 
@@ -59,9 +59,13 @@ typedef struct {
 
   double dz;
   double dr;
+  double dx;
+  double dy;
   double da;
   short nz;
   short nr;
+  short nx;
+  short ny;
   short na;
 
   short num_layers;
@@ -107,8 +111,8 @@ typedef struct {
   double *Tt_a; /* size = na */
   double Tt;
 
-  /* Flattened arrays: size = nr * nz */
-  double *OP;
+  /* Flattened arrays: size = nx * ny * nz */
+  double *OP_3D;
 
   int photonsnbrR;
   int photonsnbrT;

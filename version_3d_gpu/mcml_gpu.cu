@@ -408,11 +408,6 @@ __device__ void LaunchPhoton(LayerStruct *Layers, PhotonStruct *Photon_Ptr,
     Photon_Ptr->y =
         light_y + (curand_uniform_double(state) * 2.0 * half) - half;
   } else {
-    // Consume 4 RNG draws to stay in sync with CPU/Gaussian logic
-    (void)curand_uniform_double(state);
-    (void)curand_uniform_double(state);
-    (void)curand_uniform_double(state);
-    (void)curand_uniform_double(state);
     Photon_Ptr->x = light_x;
     Photon_Ptr->y = light_y;
   }
@@ -554,12 +549,21 @@ __global__ void MCML_Kernel_K2(InputStruct In_Ptr, LayerStruct *Layers,
         Hop(&photon);
         // --- Drop: compute & record ---
         double x = photon.x, y = photon.y;
+        short ix = (short)((x / In_Ptr.dx) + (In_Ptr.nx / 2.0));
+        if (ix > In_Ptr.nx - 1)
+          ix = In_Ptr.nx - 1;
+        if (ix < 0)
+          ix = 0;
+
+        short iy = (short)((y / In_Ptr.dy) + (In_Ptr.ny / 2.0));
+        if (iy > In_Ptr.ny - 1)
+          iy = In_Ptr.ny - 1;
+        if (iy < 0)
+          iy = 0;
+
         short iz = (short)(photon.z / In_Ptr.dz);
         if (iz > In_Ptr.nz - 1)
           iz = In_Ptr.nz - 1;
-        short ir = (short)(sqrt(x * x + y * y) / In_Ptr.dr);
-        if (ir > In_Ptr.nr - 1 || ir < 0)
-          ir = In_Ptr.nr - 1;
 
         double mua = Layers[photon.layer].mua;
         double mus = Layers[photon.layer].mus;
@@ -568,7 +572,8 @@ __global__ void MCML_Kernel_K2(InputStruct In_Ptr, LayerStruct *Layers,
         // A_rz is NOT updated here (already done in K1)
 
         if (steps < MAX_STEPS) {
-          my_path[steps].ir = ir;
+          my_path[steps].ix = ix;
+          my_path[steps].iy = iy;
           my_path[steps].iz = iz;
           my_path[steps].w = (float)photon.w; // weight AFTER absorption
           steps++;
@@ -669,11 +674,8 @@ int main(int argc, char *argv[]) {
     GPU_CHECK(cudaMemset(d_Out_Parm.Tt_ra, 0,
                          In_Parm.nr * In_Parm.na * sizeof(double)));
 
-    // OP array: size = nr * nz (same as A_rz)
-    GPU_CHECK(
-        cudaMalloc(&(d_Out_Parm.OP), In_Parm.nr * In_Parm.nz * sizeof(double)));
-    GPU_CHECK(
-        cudaMemset(d_Out_Parm.OP, 0, In_Parm.nr * In_Parm.nz * sizeof(double)));
+    // OP is no longer allocated on GPU; we scatter it directly on CPU
+    // leveraging K2's trace path buffer.
 
     // RNG States
     curandState *d_states;
@@ -763,21 +765,6 @@ int main(int argc, char *argv[]) {
       PathEntry *h_path_buf =
           (PathEntry *)malloc(path_buf_size * sizeof(PathEntry));
       int *h_path_len = (int *)malloc(total_pd_actual * sizeof(int));
-
-      if (!h_path_buf || !h_path_len) {
-        fprintf(stderr,
-                "Error: Could not allocate host path buffer (%ld entries). "
-                "Path replay skipped.\n",
-                path_buf_size);
-        if (h_path_buf)
-          free(h_path_buf);
-        if (h_path_len)
-          free(h_path_len);
-        cudaFree(d_path_buf);
-        cudaFree(d_path_len);
-        continue; // Next run
-      }
-
       GPU_CHECK(cudaMemcpy(h_path_buf, d_path_buf,
                            path_buf_size * sizeof(PathEntry),
                            cudaMemcpyDeviceToHost));
@@ -785,14 +772,18 @@ int main(int argc, char *argv[]) {
                            total_pd_actual * sizeof(int),
                            cudaMemcpyDeviceToHost));
 
+      int nx = In_Parm.nx;
+      int ny = In_Parm.ny;
       int nz = In_Parm.nz;
       for (int i = 0; i < total_pd_actual; i++) {
         int steps = h_path_len[i];
         PathEntry *p = h_path_buf + (long)i * MAX_STEPS;
-        for (int s = 0; s < steps; s++)
-          Out_Parm.OP[(int)p[s].ir * nz + (int)p[s].iz] += (double)p[s].w;
+        for (int s = 0; s < steps; s++) {
+          long idx_3d = (long)p[s].ix * ny * nz + (long)p[s].iy * nz + p[s].iz;
+          Out_Parm.OP_3D[idx_3d] += (double)p[s].w;
+        }
       }
-      printf("OP scatter done.\n");
+      printf("OP 3D scatter done.\n");
 
       free(h_path_buf);
       free(h_path_len);
@@ -830,7 +821,8 @@ int main(int argc, char *argv[]) {
     cudaFree(d_Out_Parm.Rd_ra);
     cudaFree(d_Out_Parm.A_rz);
     cudaFree(d_Out_Parm.Tt_ra);
-    cudaFree(d_Out_Parm.OP);
+    // Device OP trace was resolved via PathBuffer -> Host, no d_Out_Parm.OP to
+    // free
     cudaFree(d_pd_indices);
     cudaFree(d_pd_count_dev);
     cudaFree(d_NphR_dev);

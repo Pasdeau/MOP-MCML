@@ -25,13 +25,14 @@ void LaunchPhoton(double Rspecular, LayerStruct *Layerspecs_Ptr,
                   PhotonStruct *Photon_Ptr, short lightType, double light_x,
                   double light_y, double light_l);
 void HopDropSpin(InputStruct *, PhotonStruct *, OutStruct *, int *, double *,
-                 short *, short *);
+                 short *, short *, short *);
 void SumScaleResult(InputStruct, OutStruct *);
 void WriteResult(InputStruct, OutStruct, char *);
 
 /* Modification: DoOneRun now receives a summary CSV FILE* pointer */
 static double sOut[60000] = {0};
-static short irOut[60000] = {0};
+static short ixOut[60000] = {0};
+static short iyOut[60000] = {0};
 static short izOut[60000] = {0};
 
 /***********************************************************
@@ -148,7 +149,7 @@ static void DoOneRun(short NumRuns, InputStruct *In_Ptr, FILE *summary_fp) {
     LaunchPhoton(out_parm.Rsp, In_Ptr->layerspecs, &photon, In_Ptr->lightType,
                  In_Ptr->light_x, In_Ptr->light_y, In_Ptr->light_l);
     do {
-      HopDropSpin(In_Ptr, &photon, &out_parm, &cpt, sOut, irOut, izOut);
+      HopDropSpin(In_Ptr, &photon, &out_parm, &cpt, sOut, ixOut, iyOut, izOut);
     } while (!photon.dead);
 
     /* PD_MODE: 1=R-only, 2=T-only, 3=R+T  (default=3 if not defined) */
@@ -171,11 +172,14 @@ static void DoOneRun(short NumRuns, InputStruct *In_Ptr, FILE *summary_fp) {
         w_totR += 1 - out_parm.Rsp;
       OP_totR += photon.OP;
       for (int i = 0; i < cpt; i++) {
-        short ir_temp = irOut[i];
+        short ix_temp = ixOut[i];
+        short iy_temp = iyOut[i];
         short iz_temp = izOut[i];
         double s_temp = sOut[i];
-        out_parm.OP[ir_temp][iz_temp] += s_temp;
-        irOut[i] = 0;
+        out_parm.OP_3D[(long)ix_temp * In_Ptr->ny * In_Ptr->nz +
+                       (long)iy_temp * In_Ptr->nz + iz_temp] += s_temp;
+        ixOut[i] = 0;
+        iyOut[i] = 0;
         izOut[i] = 0;
         sOut[i] = 0.0;
       }
@@ -197,11 +201,14 @@ static void DoOneRun(short NumRuns, InputStruct *In_Ptr, FILE *summary_fp) {
         w_totT += 1 - out_parm.Rsp;
       OP_totT += photon.OP;
       for (int i = 0; i < cpt; i++) {
-        short ir_temp = irOut[i];
+        short ix_temp = ixOut[i];
+        short iy_temp = iyOut[i];
         short iz_temp = izOut[i];
         double s_temp = sOut[i];
-        out_parm.OP[ir_temp][iz_temp] += s_temp;
-        irOut[i] = 0;
+        out_parm.OP_3D[(long)ix_temp * In_Ptr->ny * In_Ptr->nz +
+                       (long)iy_temp * In_Ptr->nz + iz_temp] += s_temp;
+        ixOut[i] = 0;
+        iyOut[i] = 0;
         izOut[i] = 0;
         sOut[i] = 0.0;
       }
