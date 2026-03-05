@@ -96,10 +96,13 @@ make          # produces ./mcml_gpu
 
 ### HPC / SLURM
 
+> **Note**: The SLURM scripts use relative paths (`./mcml_gpu`), so always `cd` into `version_gpu/` before submitting.
+
 ```bash
-sbatch version_gpu/run_gpu.slurm           # single file
-sbatch version_gpu/run_batch.slurm         # multiple files sequentially
-sbatch version_gpu/run_gpu_variants.slurm  # Ronly / Tonly / RT modes
+cd version_gpu
+sbatch run_gpu.slurm           # single file (edit the .mci name inside the script)
+sbatch run_batch.slurm         # multiple files sequentially
+sbatch run_gpu_variants.slurm  # Ronly / Tonly / RT modes
 ```
 
 ```bash
@@ -149,14 +152,24 @@ The script also runs both ASCII (A) and Binary (B) output formats using `test_3d
 
 **Coordinates**: Same as 3D CPU — `OP_3D(z,y,x)`.
 
-### Running on HPC
+### Compilation & Running on HPC
+
+> **Note**: The SLURM script compiles automatically (via `nvcc`) and then runs all three modes. Always submit from inside `version_3d_gpu/`.
 
 ```bash
-sbatch version_3d_gpu/run_3d_gpu_variants.slurm
-# Runs Ronly / Tonly / RT modes, outputs: 3d_gpu_Ronly.mco, etc.
+cd version_3d_gpu
+sbatch run_3d_gpu_variants.slurm
+# Compiles + runs Ronly / Tonly / RT modes
+# Outputs: 3d_gpu_Ronly_A.mco, 3d_gpu_Tonly_A.mco, 3d_gpu_RT_A.mco
 ```
 
-**Requirements:** Same as 2D GPU (CUDA ≥ 11.8, NVIDIA GPU).
+To compile manually (without SLURM):
+```bash
+nvcc -O3 -arch=sm_80 -DPD_MODE=3 -o mcml_3d_gpu mcml_gpu.cu mcmlio_gpu.c
+./mcml_3d_gpu test_3d.mci
+```
+
+**Requirements:** Same as 2D GPU (CUDA ≥ 11.8, NVIDIA GPU, change `-arch` to match your GPU).
 
 ---
 
@@ -200,16 +213,20 @@ All versions produce `.mco` files in standard MCML format with MOP-MCML addition
 
 ### Visualization (MATLAB)
 
-**2D:**
+**2D** — after running Version 1 or 2:
 ```matlab
-% Edit mco_file at the top, then run:
-look_mop        % OP banana plot + optional MOP curve overlay
+% 1. Open look_mop.m and set mco_file to your output, e.g.:
+%    mco_file = 'test.mco';
+% 2. Run:
+look_mop        % OP banana plot; set MOPon = true to overlay the MOP curve
 ```
 
-**3D:**
+**3D** — after running Version 3 or 4:
 ```matlab
-% Edit mco_file and SliceFactor at the top, then run:
-look_mop_3d     % interactive xyz slice viewer with sliders
+% 1. Open look_mop_3d.m and set mco_file to your 3D output, e.g.:
+%    mco_file = 'test_3d.mco';   % or '3d_gpu_Ronly_A.mco'
+% 2. Run:
+look_mop_3d     % interactive xyz slice viewer with X/Y/Z sliders
 ```
 
 ---

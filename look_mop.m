@@ -4,7 +4,7 @@
 %   Requires: mop_read_mco.m, mop_plot_mco.m, mop_extract_mop.m (if MOPon)
 
 % ========== USER PARAMETERS ==============================================
-mco_file = 'validate_RT/test_cpu_Ronly.mco';   % .mco file to load
+mco_file = 'test.mco';   % .mco file to load — run Version 1 (2D CPU) first to produce this
 MOPon    = false;              % true: overlay MOP | false: plain OP plot only
 VisMode  = '2D';              % '2D' (cylindrical) | '3D' (Cartesian, future)
 

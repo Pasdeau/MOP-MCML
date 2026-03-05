@@ -13,7 +13,7 @@ module purge
 module load gcc/11 cuda/11.8
 
 # Run simulation
-# Each .mci file will generate its own summary_<name>.csv
+# ↓ Edit the .mci filename below to your input file
 echo "Starting GPU simulation at $(date)"
-./mcml_gpu input.mci
+./mcml_gpu test.mci        # replace test.mci with your input file
 echo "Simulation finished at $(date)"
